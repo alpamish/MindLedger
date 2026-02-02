@@ -50,8 +50,10 @@ import {
   BookOpen,
   Kanban,
   FileText,
+  Menu,
 } from 'lucide-react';
 import { format, isToday, isPast, isFuture, addDays } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function TodoApp() {
   // Stores
@@ -68,6 +70,8 @@ export default function TodoApp() {
   const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban' | 'calendar'>('list');
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [subtaskInputs, setSubtaskInputs] = useState<Record<string, string>>({});
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Form state
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -98,6 +102,22 @@ export default function TodoApp() {
     };
 
     initializeApp();
+  }, []);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Handle create task
@@ -196,7 +216,7 @@ export default function TodoApp() {
   // Get filtered tasks
   const getFilteredTasks = () => {
     const tasks = taskStore.getFilteredTasks();
-    
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return tasks.filter(
@@ -205,7 +225,7 @@ export default function TodoApp() {
           (task.description && task.description.toLowerCase().includes(query))
       );
     }
-    
+
     return tasks;
   };
 
@@ -239,9 +259,8 @@ export default function TodoApp() {
   const renderTaskCard = (task: any) => (
     <Card
       key={task.id}
-      className={`hover:shadow-md transition-shadow ${
-        selectedTaskIds.includes(task.id) ? 'ring-2 ring-primary' : ''
-      }`}
+      className={`hover:shadow-md transition-shadow ${selectedTaskIds.includes(task.id) ? 'ring-2 ring-primary' : ''
+        }`}
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
@@ -253,9 +272,8 @@ export default function TodoApp() {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <h3
-                className={`font-medium truncate ${
-                  task.status === TaskStatus.DONE ? 'line-through text-muted-foreground' : ''
-                }`}
+                className={`font-medium truncate ${task.status === TaskStatus.DONE ? 'line-through text-muted-foreground' : ''
+                  }`}
               >
                 {task.title}
               </h3>
@@ -271,7 +289,7 @@ export default function TodoApp() {
                 </Button>
               </div>
             </div>
-            
+
             {task.description && (
               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                 {task.description}
@@ -319,9 +337,8 @@ export default function TodoApp() {
                   {task.subtasks.filter((s: any) => s.status === TaskStatus.DONE).length}/
                   {task.subtasks.length}
                   <ChevronRight
-                    className={`h-3 w-3 ml-1 transition-transform ${
-                      expandedTasks.has(task.id) ? 'rotate-90' : ''
-                    }`}
+                    className={`h-3 w-3 ml-1 transition-transform ${expandedTasks.has(task.id) ? 'rotate-90' : ''
+                      }`}
                   />
                 </Badge>
               )}
@@ -355,11 +372,10 @@ export default function TodoApp() {
                           className="h-4 w-4"
                         />
                         <span
-                          className={`flex-1 ${
-                            subtask.status === TaskStatus.DONE
-                              ? 'line-through text-muted-foreground'
-                              : ''
-                          }`}
+                          className={`flex-1 ${subtask.status === TaskStatus.DONE
+                            ? 'line-through text-muted-foreground'
+                            : ''
+                            }`}
                         >
                           {subtask.title}
                         </span>
@@ -416,17 +432,33 @@ export default function TodoApp() {
     </Card>
   );
 
-  // Render sidebar navigation
   const renderSidebar = () => (
-    <div className="w-64 border-r bg-background flex flex-col h-full">
+    <div className={cn(
+      "border-r bg-background flex flex-col transition-all duration-300",
+      isMobile
+        ? (isSidebarOpen ? "fixed inset-0 z-50 w-full h-full" : "hidden")
+        : "w-64 h-full relative"
+    )}>
       <div className="p-4">
-        <Button
-          className="w-full"
-          onClick={() => setIsCreateDialogOpen(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          New Task
-        </Button>
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            className="flex-1"
+            onClick={() => setIsCreateDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            New Task
+          </Button>
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="ml-2"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
@@ -559,13 +591,13 @@ export default function TodoApp() {
   const filteredTasks = getFilteredTasks();
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen md:h-screen bg-background">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-visible md:overflow-hidden">
         {/* Header with Tabs */}
-        <div className="border-b bg-background">
+        <div className="border-b bg-background sticky top-0 z-30 w-full">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'tasks' | 'study' | 'notes')} className="w-full">
-            <div className="p-4">
+            <div className="p-4 bg-background">
               <TabsList className="w-auto">
                 <TabsTrigger value="tasks" className="flex items-center gap-2">
                   <CheckSquare className="h-4 w-4" />
@@ -583,22 +615,34 @@ export default function TodoApp() {
             </div>
 
             {/* Tasks Tab Content - Now includes sidebar */}
-            <TabsContent value="tasks" className="mt-0 h-[calc(100vh-80px)]">
-              <div className="flex h-full">
+            <TabsContent value="tasks" className="mt-0 h-auto md:h-[calc(100vh-80px)]">
+              <div className="flex flex-col md:flex-row h-auto md:h-full overflow-visible md:overflow-y-auto md:overflow-x-hidden">
                 {/* Sidebar inside Tasks tab */}
                 {renderSidebar()}
-                
+
                 {/* Tasks content area */}
-                <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-visible md:overflow-hidden">
                   <div className="px-4 pb-4">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <h1 className="text-2xl font-bold capitalize">
-                          {taskStore.currentView === 'all' ? 'All Tasks' : taskStore.currentView}
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                          {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        {isMobile && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsSidebarOpen(true)}
+                            className={cn(isSidebarOpen && "hidden")}
+                          >
+                            <Menu className="h-5 w-5" />
+                          </Button>
+                        )}
+                        <div>
+                          <h1 className="text-2xl font-bold capitalize">
+                            {taskStore.currentView === 'all' ? 'All Tasks' : taskStore.currentView}
+                          </h1>
+                          <p className="text-sm text-muted-foreground">
+                            {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                          </p>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -661,56 +705,84 @@ export default function TodoApp() {
                       </div>
                     )}
                   </div>
-                  
-                  {/* Task List */}
-                  <ScrollArea className="flex-1">
-                    <div className="p-4">
-              {taskStore.isLoading ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-muted-foreground">Loading...</div>
-                </div>
-              ) : filteredTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-64 text-center">
-                  <div className="text-muted-foreground mb-4">
-                    {searchQuery ? 'No tasks match your search' : 'No tasks in this view'}
-                  </div>
-                  {!searchQuery && (
-                    <Button onClick={() => setIsCreateDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Task
-                    </Button>
+
+                  {/* Task Content */}
+                  {viewMode === 'kanban' || viewMode === 'calendar' ? (
+                    <div className={cn(
+                      "flex-1",
+                      viewMode === 'calendar' ? "overflow-visible lg:overflow-hidden" : "overflow-hidden"
+                    )}>
+                      {taskStore.isLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                          <div className="text-muted-foreground">Loading...</div>
+                        </div>
+                      ) : filteredTasks.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center">
+                          <div className="text-muted-foreground mb-4">
+                            {searchQuery ? 'No tasks match your search' : 'No tasks in this view'}
+                          </div>
+                          {!searchQuery && (
+                            <Button onClick={() => setIsCreateDialogOpen(true)}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Create Task
+                            </Button>
+                          )}
+                        </div>
+                      ) : viewMode === 'kanban' ? (
+                        <div className="h-full p-4">
+                          <KanbanBoard
+                            tasks={filteredTasks}
+                            onTaskUpdate={taskStore.updateTaskData}
+                            onTaskDelete={taskStore.deleteTask}
+                            onTaskClick={(task) => {
+                              console.log('Task clicked:', task);
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-auto min-h-full lg:h-full p-4">
+                          <CalendarView tasks={filteredTasks} onTaskClick={(task) => console.log('Task clicked:', task)} />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <ScrollArea className="flex-1">
+                      <div className="p-4">
+                        {taskStore.isLoading ? (
+                          <div className="flex items-center justify-center h-64">
+                            <div className="text-muted-foreground">Loading...</div>
+                          </div>
+                        ) : filteredTasks.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center h-64 text-center">
+                            <div className="text-muted-foreground mb-4">
+                              {searchQuery ? 'No tasks match your search' : 'No tasks in this view'}
+                            </div>
+                            {!searchQuery && (
+                              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create Task
+                              </Button>
+                            )}
+                          </div>
+                        ) : viewMode === 'list' ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 px-4 py-2">
+                              <Checkbox
+                                checked={selectedTaskIds.length === filteredTasks.length}
+                                onCheckedChange={handleSelectAll}
+                              />
+                              <span className="text-sm text-muted-foreground">Select all</span>
+                            </div>
+                            {filteredTasks.map((task) => renderTaskCard(task))}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {filteredTasks.map((task) => renderTaskCard(task))}
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
                   )}
-                </div>
-              ) : viewMode === 'kanban' ? (
-                <KanbanBoard
-                  tasks={filteredTasks}
-                  onTaskUpdate={taskStore.updateTaskData}
-                  onTaskDelete={taskStore.deleteTask}
-                  onTaskClick={(task) => {
-                    // Could open a task detail dialog here
-                    console.log('Task clicked:', task);
-                  }}
-                />
-              ) : viewMode === 'calendar' ? (
-                <CalendarView tasks={filteredTasks} onTaskClick={(task) => console.log('Task clicked:', task)} />
-              ) : viewMode === 'list' ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 px-4 py-2">
-                    <Checkbox
-                      checked={selectedTaskIds.length === filteredTasks.length}
-                      onCheckedChange={handleSelectAll}
-                    />
-                    <span className="text-sm text-muted-foreground">Select all</span>
-                  </div>
-                  {filteredTasks.map((task) => renderTaskCard(task))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredTasks.map((task) => renderTaskCard(task))}
-                </div>
-              )}
-            </div>
-          </ScrollArea>
                 </div>
               </div>
             </TabsContent>
