@@ -1,0 +1,414 @@
+// Todo Application Schema - Production Grade
+// Designed for scalability, extensibility, and clean architecture
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CORE DOMAIN MODELS
+// ============================================
+
+// Workspace - Top-level container for organization
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  // JSON for extensible settings
+  settings    String?  // JSON for extensible settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  projects    Project[]
+  lists       List[]
+  tags        Tag[]
+  members     WorkspaceMember[]
+  views       SavedView[]
+  tasks       Task[]
+  studyGoals  StudyGoal[]
+  notes       Note[]
+}
+
+// Workspace membership for team collaboration
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        String   @default("member") // owner, admin, member, viewer
+  joinedAt    DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+// Project - Container for related tasks
+model Project {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?  // Markdown
+  color       String?  // Hex color code
+  icon        String?  // Emoji or icon name
+  order       Int      @default(0)
+  isArchived  Boolean  @default(false)
+  settings    String?  // JSON for project-specific settings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  lists       List[]
+
+  @@index([workspaceId])
+  @@index([isArchived])
+}
+
+// List - Categorized container within projects
+model List {
+  id          String   @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  name        String
+  description String?
+  color       String?
+  order       Int      @default(0)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@index([workspaceId])
+  @@index([projectId])
+}
+
+// Task - Core entity with full feature support
+model Task {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  projectId     String?
+  listId        String?
+  parentId      String?  // For subtasks - self-referencing
+
+  // Core fields
+  title         String
+  description   String?  // Markdown
+  status        TaskStatus @default(TODO)
+  priority      TaskPriority @default(MEDIUM)
+
+  // Dates
+  dueDate       DateTime?
+  startDate     DateTime?
+  completedAt   DateTime?
+  archivedAt    DateTime?
+
+  // Recurrence
+  recurrenceRule String? // RRULE format or custom JSON
+
+  // Ordering and organization
+  order         Int      @default(0)
+  position      Float    @default(0) // For drag-and-drop positioning
+
+  // Metadata
+  isArchived    Boolean  @default(false)
+  isRecurring   Boolean  @default(false)
+  metadata      String?  // JSON for extensible metadata
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  list          List?     @relation(fields: [listId], references: [id], onDelete: SetNull)
+  parent        Task?     @relation("TaskHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks      Task[]    @relation("TaskHierarchy")
+  tags          TaskTag[]
+  attachments   Attachment[]
+  dependencies  TaskDependency[] @relation("DependentTasks")
+  dependents    TaskDependency[] @relation("DependencyTasks")
+  reminders     Reminder[]
+  timeTracking  TimeTracking[]
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([listId])
+  @@index([parentId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@index([isArchived])
+  @@index([completedAt])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+  NONE
+}
+
+// Tag - Labels for categorization
+model Tag {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  color       String?  // Hex color code
+  icon        String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks       TaskTag[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+// Task-Tag many-to-many relation
+model TaskTag {
+  id        String   @id @default(cuid())
+  taskId    String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, tagId])
+  @@index([taskId])
+  @@index([tagId])
+}
+
+// Attachment - File attachments for tasks
+model Attachment {
+  id          String   @id @default(cuid())
+  taskId      String
+  fileName    String
+  fileUrl     String
+  fileSize    Int      // in bytes
+  fileType    String?  // MIME type
+  uploadedBy  String?  // User ID
+  createdAt   DateTime @default(now())
+
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+// Task Dependency - Dependencies between tasks
+model TaskDependency {
+  id              String   @id @default(cuid())
+  dependentTaskId String   // Task that depends on another
+  dependencyTaskId String  // Task being depended on
+  type            DependencyType @default(FINISH_TO_START)
+  createdAt       DateTime @default(now())
+
+  dependentTask   Task     @relation("DependentTasks", fields: [dependentTaskId], references: [id], onDelete: Cascade)
+  dependencyTask  Task     @relation("DependencyTasks", fields: [dependencyTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([dependentTaskId, dependencyTaskId])
+  @@index([dependentTaskId])
+  @@index([dependencyTaskId])
+}
+
+enum DependencyType {
+  FINISH_TO_START
+  START_TO_START
+  FINISH_TO_FINISH
+  START_TO_FINISH
+}
+
+// Reminder - Notifications for tasks
+model Reminder {
+  id          String   @id @default(cuid())
+  taskId      String
+  remindAt    DateTime
+  isRead      Boolean  @default(false)
+  dismissedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([remindAt])
+  @@index([isRead])
+}
+
+// Time Tracking - Time estimation and actual time spent
+model TimeTracking {
+  id          String   @id @default(cuid())
+  taskId      String
+  estimatedMinutes  Int?  // Estimated time in minutes
+  actualMinutes     Int?  // Actual time spent in minutes
+  startedAt   DateTime?
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+// Saved View / Smart Filter - Custom views with rules
+model SavedView {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  type        ViewType
+  icon        String?
+  color       String?
+  order       Int      @default(0)
+  isSystem    Boolean  @default(false) // System views like Inbox, Today
+  filters     String   // JSON: filter rules
+  sort        String?  // JSON: sort configuration
+  groupBy     String?  // JSON: grouping configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([isSystem])
+}
+
+enum ViewType {
+  LIST
+  KANBAN
+  CALENDAR
+  TIMELINE
+  SMART
+}
+
+// Keep existing User model for compatibility
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaces WorkspaceMember[]
+}
+
+// ============================================
+// STUDY TRACKING MODELS
+// ============================================
+
+// Study Goal - Define learning/study objectives
+model StudyGoal {
+  id          String   @id @default(cuid())
+  workspaceId String
+  title       String
+  description String?
+  category    StudyCategory @default(OTHER)
+  targetValue Float?   // Target value (e.g., 100 hours, 10 books, 5000 words)
+  targetUnit  String?  // Unit of measurement (hours, pages, words, lessons, etc.)
+  startDate   DateTime?
+  endDate     DateTime?
+  color       String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions    StudySession[]
+  streaks     StudyStreak[]
+
+  @@index([workspaceId])
+  @@index([isActive])
+  @@index([category])
+}
+
+enum StudyCategory {
+  LANGUAGE
+  BOOK
+  COURSE
+  SKILL
+  FITNESS
+  MEDITATION
+  OTHER
+}
+
+// Study Session - Log individual study sessions
+model StudySession {
+  id          String   @id @default(cuid())
+  goalId      String
+  date        DateTime @default(now())
+  duration    Int      // Duration in minutes
+  value       Float?   // Value completed (e.g., 5 pages read, 100 words learned)
+  notes       String?
+  mood        String?  // How the user felt during the session
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  goal        StudyGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([date])
+}
+
+// Study Streak - Track consecutive days of study
+model StudyStreak {
+  id          String   @id @default(cuid())
+  goalId      String
+  startDate   DateTime
+  endDate     DateTime?
+  days        Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  goal        StudyGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+  @@index([isActive])
+}
+
+// ============================================
+// NOTE TAKING MODELS
+// ============================================
+
+// Note - Individual notes for quick capture and organization
+model Note {
+  id          String   @id @default(cuid())
+  workspaceId String
+  title       String?
+  content     String   // Markdown content
+  color       String?  // Background color for note card
+  isPinned    Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([isPinned])
+  @@index([isArchived])
+}
