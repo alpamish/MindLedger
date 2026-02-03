@@ -71,6 +71,10 @@ export default function TodoApp() {
   const [isMobile, setIsMobile] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const tasksPerPage = 20;
+
   // Form state
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
@@ -255,10 +259,14 @@ export default function TodoApp() {
   };
 
   // Render task card
-  const renderTaskCard = (task: any) => (
+  const renderTaskCard = (task: any) => {
+    const isOverdue = task.dueDate && isPast(new Date(task.dueDate)) && task.status !== TaskStatus.DONE;
+    
+    return (
     <Card
       key={task.id}
       className={`hover:shadow-md transition-shadow ${selectedTaskIds.includes(task.id) ? 'ring-2 ring-primary' : ''
+        } ${isOverdue ? 'border-red-300 bg-red-50/50' : ''
         }`}
     >
       <CardContent className="p-4">
@@ -430,13 +438,14 @@ export default function TodoApp() {
       </CardContent>
     </Card>
   );
+  };
 
   const renderSidebar = () => (
     <div className={cn(
       "border-r bg-background flex flex-col transition-all duration-300",
       isMobile
         ? (isSidebarOpen ? "fixed inset-0 z-50 w-full h-full" : "hidden")
-        : "w-64 h-full relative"
+        : "w-64 sticky top-0 h-[calc(100vh-80px)] overflow-hidden"
     )}>
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
@@ -601,6 +610,16 @@ export default function TodoApp() {
 
   const filteredTasks = getFilteredTasks();
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
+  const startIndex = (currentPage - 1) * tasksPerPage;
+  const paginatedTasks = filteredTasks.slice(startIndex, startIndex + tasksPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [taskStore.currentView, searchQuery]);
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Main Content */}
@@ -652,6 +671,7 @@ export default function TodoApp() {
                           </h1>
                           <p className="text-sm text-muted-foreground">
                             {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                            {totalPages > 1 && ` (showing ${startIndex + 1}-${Math.min(startIndex + tasksPerPage, filteredTasks.length)})`}
                           </p>
                         </div>
                       </div>
@@ -762,14 +782,38 @@ export default function TodoApp() {
                               />
                               <span className="text-sm text-muted-foreground">Select all</span>
                             </div>
-                            {filteredTasks.map((task) => renderTaskCard(task))}
+                            {paginatedTasks.map((task) => renderTaskCard(task))}
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filteredTasks.map((task) => renderTaskCard(task))}
+                          <div className="grid grid-cols-3 gap-4">
+                            {paginatedTasks.map((task) => renderTaskCard(task))}
                           </div>
                         )}
                       </div>
+                      {/* Pagination Controls */}
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 p-4 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <span className="text-sm text-muted-foreground">
+                            Page {currentPage} of {totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      )}
                     </ScrollArea>
                   )}
                 </div>

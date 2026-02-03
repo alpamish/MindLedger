@@ -404,7 +404,7 @@ export const useTaskStore = create<TaskState>()(
 
           switch (currentView) {
             case 'inbox':
-              return task.status === TaskStatus.TODO && !task.dueDate;
+              return true;
 
             case 'today':
               return task.dueDate && new Date(task.dueDate).toDateString() === today.toDateString();
