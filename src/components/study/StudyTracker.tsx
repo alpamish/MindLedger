@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Plus,
   BookOpen,
@@ -22,6 +23,10 @@ import {
   BarChart3,
   Pause,
   Play,
+  History,
+  Eye,
+  CheckCircle,
+  Archive,
 } from 'lucide-react';
 
 export function StudyTracker() {
@@ -30,7 +35,10 @@ export function StudyTracker() {
   // Local state
   const [isCreateGoalOpen, setIsCreateGoalOpen] = useState(false);
   const [isLogSessionOpen, setIsLogSessionOpen] = useState(false);
+  const [isViewSessionsOpen, setIsViewSessionsOpen] = useState(false);
   const [selectedGoalForSession, setSelectedGoalForSession] = useState<string | null>(null);
+  const [isViewGoalSessionsOpen, setIsViewGoalSessionsOpen] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   
@@ -47,10 +55,20 @@ export function StudyTracker() {
   const [sessionNotes, setSessionNotes] = useState('');
   const [sessionMood, setSessionMood] = useState('');
 
+  // View sessions pagination
+  const [sessionsPage, setSessionsPage] = useState(1);
+  const sessionsPerPage = 20;
+
+  // Archive view state
+  const [isViewArchiveOpen, setIsViewArchiveOpen] = useState(false);
+  const [archivePage, setArchivePage] = useState(1);
+  const goalsPerPage = 20;
+
   // Initialize
   useEffect(() => {
     studyStore.fetchGoals();
     studyStore.fetchStatistics();
+    studyStore.fetchSessions();
   }, []);
 
   // Timer effect
@@ -63,6 +81,28 @@ export function StudyTracker() {
     }
     return () => clearInterval(interval);
   }, [isTimerRunning]);
+
+  // Reset sessions page when dialog closes
+  useEffect(() => {
+    if (!isViewSessionsOpen) {
+      setSessionsPage(1);
+    }
+  }, [isViewSessionsOpen]);
+
+  // Reset sessions page when goal sessions dialog closes
+  useEffect(() => {
+    if (!isViewGoalSessionsOpen) {
+      setSessionsPage(1);
+      setSelectedGoalId(null);
+    }
+  }, [isViewGoalSessionsOpen]);
+
+  // Reset archive page when archive dialog closes
+  useEffect(() => {
+    if (!isViewArchiveOpen) {
+      setArchivePage(1);
+    }
+  }, [isViewArchiveOpen]);
 
   // Handle create goal
   const handleCreateGoal = async () => {
@@ -234,9 +274,21 @@ export function StudyTracker() {
 
           <Dialog open={isLogSessionOpen} onOpenChange={setIsLogSessionOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">
-                <Clock className="h-4 w-4 mr-2" />
-                Log Session
+              <Button 
+                variant="outline"
+                disabled={goals.filter((goal) => (goal.progress?.progressPercentage || 0) < 100).length === 0}
+              >
+                {goals.filter((goal) => (goal.progress?.progressPercentage || 0) < 100).length === 0 ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    All Goals Completed
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-4 w-4 mr-2" />
+                    Log Session
+                  </>
+                )}
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -251,11 +303,22 @@ export function StudyTracker() {
                       <SelectValue placeholder="Select a goal" />
                     </SelectTrigger>
                     <SelectContent>
-                      {goals.map((goal) => (
+                      {goals.filter((goal) => {
+                        const progress = goal.progress || {};
+                        return (progress.progressPercentage || 0) < 100;
+                      }).map((goal) => (
                         <SelectItem key={goal.id} value={goal.id}>
                           {StudyCategoryConfig[goal.category]?.icon} {goal.title}
                         </SelectItem>
                       ))}
+                      {goals.filter((goal) => {
+                        const progress = goal.progress || {};
+                        return (progress.progressPercentage || 0) < 100;
+                      }).length === 0 && (
+                        <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                          All goals completed
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -341,11 +404,336 @@ export function StudyTracker() {
                 </Button>
                 <Button 
                   onClick={handleLogSession} 
-                  disabled={!selectedGoalForSession || (!sessionDuration && timerSeconds === 0)}
+                  disabled={
+                    !selectedGoalForSession || 
+                    (!sessionDuration && timerSeconds === 0) ||
+                    (selectedGoalForSession ? (studyStore.getGoalById(selectedGoalForSession)?.progress?.progressPercentage || 0) >= 100 : false)
+                  }
                 >
                   Log Session
                 </Button>
               </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isViewSessionsOpen} onOpenChange={setIsViewSessionsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Eye className="h-4 w-4 mr-2" />
+                View Sessions
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-[50rem] max-h-[83vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Recorded Study Sessions</DialogTitle>
+              </DialogHeader>
+              <div className="py-4 flex flex-col" style={{ maxHeight: '63vh' }}>
+                {studyStore.sessions.size === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <History className="h-12 w-12 mx-auto mb-4" />
+                    <p>No recorded sessions yet.</p>
+                    <p className="text-sm">Start logging your study sessions to track your progress!</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Calculate paginated sessions */}
+                    {(() => {
+                      const sortedSessions = Array.from(studyStore.sessions.values())
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                      const totalPages = Math.ceil(sortedSessions.length / sessionsPerPage);
+                      const startIndex = (sessionsPage - 1) * sessionsPerPage;
+                      const paginatedSessions = sortedSessions.slice(startIndex, startIndex + sessionsPerPage);
+
+                      return (
+                        <>
+                          <ScrollArea className="flex-1 overflow-y-auto pr-4">
+                            <div className="space-y-3 pb-4">
+                              {paginatedSessions.map((session) => {
+                                const goal = studyStore.getGoalById(session.goalId);
+                                return (
+                                  <div key={session.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-xl">{goal ? StudyCategoryConfig[goal.category]?.icon : '📚'}</span>
+                                      <div>
+                                        <p className="font-medium text-sm">{goal?.title || 'Unknown Goal'}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {format(new Date(session.date), 'MMM d, yyyy')} • {session.duration} minutes
+                                        </p>
+                                        {session.notes && (
+                                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{session.notes}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-sm font-medium">
+                                        {Math.floor(session.duration / 60)}h {session.duration % 60}m
+                                      </p>
+                                      {session.value && (
+                                        <p className="text-xs text-muted-foreground">{session.value} {goal?.targetUnit || 'items'}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </ScrollArea>
+
+                          {/* Pagination Controls */}
+                          {totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSessionsPage((prev) => Math.max(1, prev - 1))}
+                                disabled={sessionsPage === 1}
+                              >
+                                Previous
+                              </Button>
+                              <span className="text-sm text-muted-foreground">
+                                Page {sessionsPage} of {totalPages} ({sortedSessions.length} sessions)
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSessionsPage((prev) => Math.min(totalPages, prev + 1))}
+                                disabled={sessionsPage === totalPages}
+                              >
+                                Next
+                              </Button>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* View Archived Goals Dialog */}
+          <Dialog open={isViewArchiveOpen} onOpenChange={setIsViewArchiveOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Archive className="h-4 w-4 mr-2" />
+                Archived Goals
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="w-[45%] max-h-[83vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Archived Goals</DialogTitle>
+              </DialogHeader>
+              <div className="py-4 flex flex-col" style={{ maxHeight: '63vh' }}>
+                {(() => {
+                  const archivedGoals = goals.filter((goal) => !goal.isActive);
+                  const totalPages = Math.ceil(archivedGoals.length / goalsPerPage);
+                  const startIndex = (archivePage - 1) * goalsPerPage;
+                  const paginatedGoals = archivedGoals.slice(startIndex, startIndex + goalsPerPage);
+
+                  if (archivedGoals.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Archive className="h-12 w-12 mx-auto mb-4" />
+                        <p>No archived goals yet.</p>
+                        <p className="text-sm">Complete goals to see them here!</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <ScrollArea className="flex-1 overflow-y-auto pr-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
+                          {paginatedGoals.map((goal) => {
+                            const config = StudyCategoryConfig[goal.category];
+                            const progress = goal.progress || {};
+                            return (
+                              <Card key={goal.id} className="hover:shadow-md transition-shadow">
+                                <CardHeader>
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-2xl">{config?.icon}</span>
+                                      <div>
+                                        <CardTitle className="text-lg">{goal.title}</CardTitle>
+                                        <CardDescription className="text-xs">{config?.label}</CardDescription>
+                                      </div>
+                                    </div>
+                                    <Badge variant="secondary">
+                                      Archived
+                                    </Badge>
+                                  </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                  {/* Progress */}
+                                  {goal.targetValue && (
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Progress</span>
+                                        <span className="font-medium text-green-600">
+                                          Completed
+                                        </span>
+                                      </div>
+                                      <Progress value={100} className="h-2" />
+                                      <div className="flex justify-between text-xs text-muted-foreground">
+                                        <span>{goal.targetUnit === 'hours' ? progress.totalHours?.toFixed(1) : progress.totalValue} / {goal.targetValue} {goal.targetUnit}</span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Stats */}
+                                  <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div 
+                                      className="bg-muted rounded-lg p-2 cursor-pointer hover:bg-muted/70 transition-colors"
+                                      onClick={() => {
+                                        setSelectedGoalId(goal.id);
+                                        setIsViewGoalSessionsOpen(true);
+                                      }}
+                                    >
+                                      <div className="text-lg font-bold">{progress.sessionCount || 0}</div>
+                                      <div className="text-xs text-muted-foreground">Sessions</div>
+                                    </div>
+                                    <div className="bg-muted rounded-lg p-2">
+                                      <div className="text-lg font-bold">{progress.totalHours?.toFixed(1) || 0}h</div>
+                                      <div className="text-xs text-muted-foreground">Total</div>
+                                    </div>
+                                    <div className="bg-muted rounded-lg p-2">
+                                      <div className="text-lg font-bold">{progress.currentStreak || 0}🔥</div>
+                                      <div className="text-xs text-muted-foreground">Streak</div>
+                                    </div>
+                                  </div>
+
+                                  {/* Completed Status */}
+                                  <div className="w-full p-2 bg-green-50 rounded-lg text-center">
+                                    <div className="text-sm font-medium text-green-700">
+                                      🎉 Goal Completed
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+
+                      {/* Pagination Controls */}
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setArchivePage((prev) => Math.max(1, prev - 1))}
+                            disabled={archivePage === 1}
+                          >
+                            Previous
+                          </Button>
+                          <span className="text-sm text-muted-foreground">
+                            Page {archivePage} of {totalPages} ({archivedGoals.length} archived)
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setArchivePage((prev) => Math.min(totalPages, prev + 1))}
+                            disabled={archivePage === totalPages}
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Goal Specific Sessions Dialog */}
+          <Dialog open={isViewGoalSessionsOpen} onOpenChange={setIsViewGoalSessionsOpen}>
+            <DialogContent className="max-w-[50rem] max-h-[83vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedGoalId ? studyStore.getGoalById(selectedGoalId)?.title : 'Goal'} - Sessions
+                </DialogTitle>
+              </DialogHeader>
+              <div className="py-4 flex flex-col" style={{ maxHeight: '63vh' }}>
+                {!selectedGoalId || studyStore.sessions.size === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <History className="h-12 w-12 mx-auto mb-4" />
+                    <p>No sessions found for this goal.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Calculate paginated sessions for selected goal */}
+                    {(() => {
+                      const selectedGoal = studyStore.getGoalById(selectedGoalId);
+                      const goalSessions = Array.from(studyStore.sessions.values())
+                        .filter((session) => session.goalId === selectedGoalId)
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                      
+                      const totalPages = Math.ceil(goalSessions.length / sessionsPerPage);
+                      const startIndex = (sessionsPage - 1) * sessionsPerPage;
+                      const paginatedSessions = goalSessions.slice(startIndex, startIndex + sessionsPerPage);
+
+                      return (
+                        <>
+                          <ScrollArea className="flex-1 overflow-y-auto pr-4">
+                            <div className="space-y-3 pb-4">
+                              {paginatedSessions.map((session) => (
+                                <div key={session.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xl">{selectedGoal ? StudyCategoryConfig[selectedGoal.category]?.icon : '📚'}</span>
+                                    <div>
+                                      <p className="font-medium text-sm">{selectedGoal?.title || 'Unknown Goal'}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {format(new Date(session.date), 'MMM d, yyyy')} • {session.duration} minutes
+                                      </p>
+                                      {session.notes && (
+                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{session.notes}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-sm font-medium">
+                                      {Math.floor(session.duration / 60)}h {session.duration % 60}m
+                                    </p>
+                                    {session.value && (
+                                      <p className="text-xs text-muted-foreground">{session.value} {selectedGoal?.targetUnit || 'items'}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+
+                          {/* Pagination Controls */}
+                          {totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 pt-4 border-t">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSessionsPage((prev) => Math.max(1, prev - 1))}
+                                disabled={sessionsPage === 1}
+                              >
+                                Previous
+                              </Button>
+                              <span className="text-sm text-muted-foreground">
+                                Page {sessionsPage} of {totalPages} ({goalSessions.length} sessions)
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSessionsPage((prev) => Math.min(totalPages, prev + 1))}
+                                disabled={sessionsPage === totalPages}
+                              >
+                                Next
+                              </Button>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -415,92 +803,151 @@ export function StudyTracker() {
       {/* Goals Grid */}
       <div>
         <h3 className="text-xl font-semibold mb-4">Study Goals</h3>
-        {goals.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center mb-4">
-                No study goals yet. Create your first goal to start tracking your learning!
-              </p>
-              <Button onClick={() => setIsCreateGoalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create First Goal
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {goals.map((goal) => {
+        {(() => {
+          const activeGoals = goals.filter((goal) => {
+            const progress = goal.progress || {};
+            return goal.isActive && (progress.progressPercentage || 0) < 100;
+          });
+          const hasGoals = goals.length > 0;
+          const allCompleted = hasGoals && activeGoals.length === 0;
+
+          if (!hasGoals) {
+            return (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground text-center mb-4">
+                    No study goals yet. Create your first goal to start tracking your learning!
+                  </p>
+                  <Button onClick={() => setIsCreateGoalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Goal
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          }
+
+          if (allCompleted) {
+            return (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                  <p className="text-muted-foreground text-center mb-2">
+                    All goals completed!
+                  </p>
+                  <p className="text-sm text-muted-foreground text-center mb-4">
+                    Great job! View your archived goals or create new ones.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsViewArchiveOpen(true)}>
+                      <Archive className="h-4 w-4 mr-2" />
+                      View Archived
+                    </Button>
+                    <Button onClick={() => setIsCreateGoalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Goal
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          }
+
+          return (
+          <div className="space-y-4">
+            {activeGoals.map((goal) => {
               const config = StudyCategoryConfig[goal.category];
               const progress = goal.progress || {};
               
               return (
                 <Card key={goal.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{config?.icon}</span>
-                        <div>
-                          <CardTitle className="text-lg">{goal.title}</CardTitle>
-                          <CardDescription className="text-xs">{config?.label}</CardDescription>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+                          {config?.icon}
                         </div>
                       </div>
-                      <Badge variant={goal.isActive ? 'default' : 'secondary'}>
-                        {goal.isActive ? 'Active' : 'Archived'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Progress */}
-                    {goal.targetValue && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Progress</span>
-                          <span className="font-medium">
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        {/* Header */}
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <h3 className="font-semibold text-lg truncate">{goal.title}</h3>
+                          <Badge variant="default" className="flex-shrink-0">
                             {progress.progressPercentage || 0}%
+                          </Badge>
+                        </div>
+                        
+                        {/* Category */}
+                        <p className="text-xs text-muted-foreground mb-3">{config?.label}</p>
+                        
+                        {/* Progress Bar */}
+                        <div className="mb-2">
+                          <Progress value={progress.progressPercentage || 0} className="h-2" />
+                        </div>
+                        
+                        {/* Target Info */}
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {goal.targetUnit === 'hours' 
+                              ? `${progress.totalHours?.toFixed(1) || 0} / ${goal.targetValue} ${goal.targetUnit}`
+                              : `${progress.totalValue || 0} / ${goal.targetValue} ${goal.targetUnit}`
+                            }
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {progress.sessionCount || 0} sessions • {progress.totalHours?.toFixed(1) || 0}h • {progress.currentStreak || 0}🔥
                           </span>
                         </div>
-                        <Progress value={progress.progressPercentage || 0} className="h-2" />
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{goal.targetUnit === 'hours' ? progress.totalHours?.toFixed(1) : progress.totalValue} / {goal.targetValue} {goal.targetUnit}</span>
-                        </div>
                       </div>
-                    )}
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="bg-muted rounded-lg p-2">
-                        <div className="text-lg font-bold">{progress.sessionCount || 0}</div>
-                        <div className="text-xs text-muted-foreground">Sessions</div>
-                      </div>
-                      <div className="bg-muted rounded-lg p-2">
-                        <div className="text-lg font-bold">{progress.totalHours?.toFixed(1) || 0}h</div>
-                        <div className="text-xs text-muted-foreground">Total</div>
-                      </div>
-                      <div className="bg-muted rounded-lg p-2">
-                        <div className="text-lg font-bold">{progress.currentStreak || 0}🔥</div>
-                        <div className="text-xs text-muted-foreground">Streak</div>
+                      
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2 flex-shrink-0">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedGoalId(goal.id);
+                            setIsViewGoalSessionsOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Sessions
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={progress.progressPercentage >= 100 ? 'secondary' : 'default'}
+                          disabled={progress.progressPercentage >= 100}
+                          onClick={() => {
+                            if (progress.progressPercentage < 100) {
+                              setSelectedGoalForSession(goal.id);
+                              setIsLogSessionOpen(true);
+                            }
+                          }}
+                        >
+                          {progress.progressPercentage >= 100 ? (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Done
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="h-4 w-4 mr-1" />
+                              Log
+                            </>
+                          )}
+                        </Button>
                       </div>
                     </div>
-
-                    {/* Quick Action */}
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedGoalForSession(goal.id);
-                        setIsLogSessionOpen(true);
-                      }}
-                    >
-                      <Clock className="h-4 w-4 mr-2" />
-                      Log Session
-                    </Button>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Progress by Goal */}
@@ -518,11 +965,18 @@ export function StudyTracker() {
                       <span>{StudyCategoryConfig[stat.goal.category]?.icon}</span>
                       <span className="font-medium">{stat.goal.title}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">
-                      {stat.totalHours.toFixed(1)}h • {stat.sessionCount} sessions
-                    </span>
+                    <div className="text-right">
+                      <span className="text-sm text-muted-foreground">
+                        {stat.totalHours.toFixed(1)}h • {stat.sessionCount} sessions
+                      </span>
+                      {stat.goal.targetValue && (
+                        <span className="text-sm font-medium ml-2">
+                          {stat.progressPercentage || 0}%
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <Progress value={Math.min((stat.totalHours / (stat.goal.targetValue || stat.totalHours)) * 100, 100)} className="h-2" />
+                  <Progress value={stat.progressPercentage || 0} className="h-2" />
                 </div>
               ))}
             </div>

@@ -78,11 +78,13 @@ export async function GET(request: NextRequest) {
         goalStats.set(goalId, {
           goal: session.goal,
           totalMinutes: 0,
+          sessionValue: 0,
           sessionCount: 0,
         });
       }
       const stats = goalStats.get(goalId);
       stats.totalMinutes += session.duration;
+      stats.sessionValue += (session.value || 0);
       stats.sessionCount += 1;
     });
 
@@ -112,10 +114,26 @@ export async function GET(request: NextRequest) {
           bestDayMinutes,
         },
         dailyData,
-        goalsByStats: Array.from(goalStats.values()).map((stat) => ({
-          ...stat,
-          totalHours: Math.round((stat.totalMinutes / 60) * 100) / 100,
-        })),
+        goalsByStats: Array.from(goalStats.values()).map((stat) => {
+          const totalHours = Math.round((stat.totalMinutes / 60) * 100) / 100;
+          const goal = stat.goal;
+          
+          // Calculate progress percentage based on target unit
+          let progressPercentage = 0;
+          if (goal.targetValue && goal.targetValue > 0) {
+            if (goal.targetUnit === 'hours') {
+              progressPercentage = Math.min(100, Math.round((totalHours / goal.targetValue) * 100));
+            } else {
+              progressPercentage = Math.min(100, Math.round((stat.sessionValue / goal.targetValue) * 100));
+            }
+          }
+          
+          return {
+            ...stat,
+            totalHours,
+            progressPercentage,
+          };
+        }),
         activeStreaks,
       },
     });

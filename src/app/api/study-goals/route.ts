@@ -46,6 +46,16 @@ export async function GET(request: NextRequest) {
       const totalValue = goal.sessions.reduce((sum, session) => sum + (session.value || 0), 0);
       const currentStreak = goal.streaks[0] || null;
 
+      // Calculate progress percentage based on target
+      let progressPercentage = 0;
+      if (goal.targetValue && goal.targetValue > 0) {
+        if (goal.targetUnit === 'hours') {
+          progressPercentage = Math.min(100, Math.round((totalHours / goal.targetValue) * 100));
+        } else {
+          progressPercentage = Math.min(100, Math.round((totalValue / goal.targetValue) * 100));
+        }
+      }
+
       return {
         ...goal,
         progress: {
@@ -54,6 +64,7 @@ export async function GET(request: NextRequest) {
           totalValue,
           sessionCount: goal._count.sessions,
           currentStreak: currentStreak?.days || 0,
+          progressPercentage,
         },
       };
     });

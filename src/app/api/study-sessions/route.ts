@@ -110,6 +110,9 @@ export async function POST(request: NextRequest) {
     // Update or create streak
     await updateStreak(goalId);
 
+    // Check if goal should be archived (completed)
+    await checkAndArchiveGoal(goalId);
+
     return NextResponse.json({
       success: true,
       data: session,
@@ -199,5 +202,44 @@ async function updateStreak(goalId: string) {
         isActive: true,
       },
     });
+  }
+}
+
+// Helper function to check and archive completed goals
+async function checkAndArchiveGoal(goalId: string) {
+  const { PrismaClient } = await import('@prisma/client');
+  const prisma = new PrismaClient();
+  
+  // Get the goal with all sessions
+  const goal = await prisma.studyGoal.findUnique({
+    where: { id: goalId },
+    include: {
+      sessions: true,
+    },
+  });
+  
+  if (!goal || !goal.targetValue || goal.targetValue <= 0 || !goal.isActive) {
+    return;
+  }
+  
+  // Calculate progress
+  const totalMinutes = goal.sessions.reduce((sum, session) => sum + session.duration, 0);
+  const totalHours = totalMinutes / 60;
+  const totalValue = goal.sessions.reduce((sum, session) => sum + (session.value || 0), 0);
+  
+  let progressPercentage = 0;
+  if (goal.targetUnit === 'hours') {
+    progressPercentage = (totalHours / goal.targetValue) * 100;
+  } else {
+    progressPercentage = (totalValue / goal.targetValue) * 100;
+  }
+  
+  // Archive goal if progress >= 100%
+  if (progressPercentage >= 100) {
+    await prisma.studyGoal.update({
+      where: { id: goalId },
+      data: { isActive: false },
+    });
+    console.log(`Goal ${goalId} archived - completed ${progressPercentage.toFixed(1)}%`);
   }
 }
