@@ -257,7 +257,7 @@ async function checkAndArchiveGoal(goalId: string) {
   if (progressPercentage >= 100) {
     await prisma.studyGoal.update({
       where: { id: goalId },
-      data: { isActive: false },
+      data: { isActive: false, completedAt: new Date() },
     });
     console.log(`Goal ${goalId} archived - completed ${progressPercentage.toFixed(1)}%`);
   }

@@ -791,7 +791,21 @@ export function StudyTracker() {
                                     <div className="text-sm font-medium text-green-700">
                                       🎉 Goal Completed
                                     </div>
+                                    <p className="text-xs text-green-600 mt-1">
+                                      {goal.completedAt ? format(new Date(goal.completedAt), 'MMM d, yyyy') : ''}
+                                    </p>
                                   </div>
+
+                                  {/* Delete Button */}
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full text-muted-foreground hover:text-red-500"
+                                    onClick={() => setGoalToDelete(goal.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Goal
+                                  </Button>
                                 </CardContent>
                               </Card>
                             );
@@ -1113,17 +1127,25 @@ export function StudyTracker() {
                           </div>
                         </div>
 
-                        {/* Title & Category */}
-                        <div className="flex-1 min-w-0 pt-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xl">{config?.icon}</span>
+                          {/* Title & Category */}
+                          <div className="flex-1 min-w-0 pt-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xl">{config?.icon}</span>
+                              <Badge variant="secondary" className="text-xs font-normal">
+                                {config?.label}
+                              </Badge>
+                            </div>
                             <h4 className="font-semibold text-base leading-tight truncate">{goal.title}</h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Created {goal.createdAt ? format(new Date(goal.createdAt), 'MMM d, yyyy') : ''}
+                            </p>
+                            {goal.description && (
+                              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                                {goal.description.length > 100 ? goal.description.slice(0, 100) + '...' : goal.description}
+                              </p>
+                            )}
                           </div>
-                          <Badge variant="secondary" className="text-xs font-normal">
-                            {config?.label}
-                          </Badge>
                         </div>
-                      </div>
 
                       {/* Progress Bar */}
                       <div className="mb-5">
@@ -1207,37 +1229,6 @@ export function StudyTracker() {
           );
         })()}
       </div>
-
-      {/* Progress by Goal */}
-      {statistics && statistics.goalsByStats && statistics.goalsByStats.filter((s: any) => (s.progressPercentage || 0) < 100).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Progress by Goal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {statistics.goalsByStats
-                .filter((stat: any) => (stat.progressPercentage || 0) < 100)
-                .map((stat: any) => (
-                  <div key={stat.goal.id} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span>{StudyCategoryConfig[stat.goal.category]?.icon}</span>
-                        <span className="font-medium">{stat.goal.title}</span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-medium">
-                          {formatNumber(stat.totalValue)} / {stat.goal.targetValue} {stat.goal.targetUnit}
-                        </span>
-                      </div>
-                    </div>
-                    <Progress value={stat.progressPercentage || 0} className="h-2" />
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Delete Goal Confirmation Dialog */}
       <Dialog open={!!goalToDelete} onOpenChange={() => setGoalToDelete(null)}>

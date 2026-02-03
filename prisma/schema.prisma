@@ -329,6 +329,7 @@ model StudyGoal {
   targetUnit  String?  // Unit of measurement (hours, pages, words, lessons, etc.)
   startDate   DateTime?
   endDate     DateTime?
+  completedAt DateTime?
   color       String?
   icon        String?
   isActive    Boolean  @default(true)
@@ -342,6 +343,7 @@ model StudyGoal {
   @@index([workspaceId])
   @@index([isActive])
   @@index([category])
+  @@index([completedAt])
 }
 
 enum StudyCategory {
