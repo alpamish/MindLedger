@@ -243,8 +243,9 @@ export const useStudyStore = create<StudyGoalState>()(
 
           if (result.success && result.data) {
             get().addSession(result.data);
-            // Refresh goals to update progress
+            // Refresh goals and statistics to update progress displays
             await get().fetchGoals();
+            await get().fetchStatistics();
           } else {
             throw new Error(result.error?.message || 'Failed to log study session');
           }

@@ -90,12 +90,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Parse value - handle both string and number, and ensure it's valid
+    let parsedValue: number | undefined = undefined;
+    if (value !== undefined && value !== null && value !== '') {
+      parsedValue = typeof value === 'string' ? parseFloat(value) : value;
+      if (isNaN(parsedValue)) {
+        console.error('Invalid value:', value);
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Value must be a valid number',
+            },
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create session
     const session = await prisma.studySession.create({
       data: {
         goalId,
         duration: parsedDuration,
-        value,
+        value: parsedValue,
         notes,
         mood,
         date: date ? new Date(date) : new Date(),
