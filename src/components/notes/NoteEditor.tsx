@@ -113,7 +113,7 @@ export function NoteEditor({
 
       {/* Editor Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto p-6 md:p-10">
+        <div className="mx-auto p-6 md:p-10">
           <input
             type="text"
             placeholder="Note title"

@@ -152,7 +152,8 @@ export function Notes() {
   };
 
   const getNotePreview = (content: string) => {
-    return content.replace(/\n/g, ' ').slice(0, 100) || 'No additional text';
+    const trimmed = content.replace(/\n/g, ' ').slice(0, 40) || 'No additional text';
+    return content.length > 40 ? trimmed + '...' : trimmed;
   };
 
   return (

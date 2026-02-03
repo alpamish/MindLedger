@@ -265,7 +265,7 @@ export default function TodoApp() {
     return (
     <Card
       key={task.id}
-      className={`hover:shadow-md transition-shadow ${selectedTaskIds.includes(task.id) ? 'ring-2 ring-primary' : ''
+      className={`cursor-pointer hover:shadow-md transition-shadow ${selectedTaskIds.includes(task.id) ? 'ring-2 ring-primary' : ''
         } ${isOverdue ? 'border-red-300 bg-red-50/50' : ''
         }`}
     >
@@ -274,7 +274,7 @@ export default function TodoApp() {
           <Checkbox
             checked={task.status === TaskStatus.DONE}
             onCheckedChange={(checked) => handleTaskStatusChange(task.id, checked as boolean)}
-            className="mt-1"
+            className="mt-1 cursor-pointer"
           />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
@@ -289,7 +289,7 @@ export default function TodoApp() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6"
+                  className="h-6 w-6 cursor-pointer"
                   onClick={() => handleDeleteTask(task.id)}
                 >
                   <Trash2 className="h-3 w-3" />
@@ -450,7 +450,7 @@ export default function TodoApp() {
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           <Button
-            className="flex-1"
+            className="flex-1 cursor-pointer"
             onClick={() => setIsCreateDialogOpen(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -691,7 +691,7 @@ export default function TodoApp() {
                           <Button
                             variant={viewMode === 'list' ? 'secondary' : 'ghost'}
                             size="icon"
-                            className="rounded-none"
+                            className="rounded-none cursor-pointer"
                             onClick={() => setViewMode('list')}
                           >
                             <List className="h-4 w-4" />
@@ -699,7 +699,7 @@ export default function TodoApp() {
                           <Button
                             variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                             size="icon"
-                            className="rounded-none"
+                            className="rounded-none cursor-pointer"
                             onClick={() => setViewMode('grid')}
                           >
                             <LayoutGrid className="h-4 w-4" />
@@ -707,7 +707,7 @@ export default function TodoApp() {
                           <Button
                             variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
                             size="icon"
-                            className="rounded-l-none"
+                            className="rounded-l-none cursor-pointer"
                             onClick={() => setViewMode('calendar')}
                           >
                             <CalendarDays className="h-4 w-4" />
@@ -742,7 +742,7 @@ export default function TodoApp() {
                             {searchQuery ? 'No tasks match your search' : 'No tasks in this view'}
                           </div>
                           {!searchQuery && (
-                            <Button onClick={() => setIsCreateDialogOpen(true)}>
+                            <Button className="cursor-pointer" onClick={() => setIsCreateDialogOpen(true)}>
                               <Plus className="h-4 w-4 mr-2" />
                               Create Task
                             </Button>
@@ -767,7 +767,7 @@ export default function TodoApp() {
                               {searchQuery ? 'No tasks match your search' : 'No tasks in this view'}
                             </div>
                             {!searchQuery && (
-                              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                              <Button className="cursor-pointer" onClick={() => setIsCreateDialogOpen(true)}>
                                 <Plus className="h-4 w-4 mr-2" />
                                 Create Task
                               </Button>
