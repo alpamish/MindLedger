@@ -279,7 +279,7 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 w-full">
+        <div className="flex w-full">
           <Calendar
             onChange={(value) => {
               if (value instanceof Date) {
@@ -295,7 +295,7 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
             }}
             tileContent={tileContent}
             tileClassName={tileClassName}
-            className="w-full h-auto lg:h-full border-0 shadow-none react-calendar-custom"
+            className="!w-full max-w-none border-0 shadow-none react-calendar-custom text-xl"
             showNavigation={false}
           />
         </div>
@@ -327,7 +327,7 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
 
       {/* Selected Date Tasks Panel */}
       {/* Selected Date Tasks Panel */}
-      <div className="w-full lg:w-[450px] bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl flex flex-col shrink-0 h-auto min-h-[400px] lg:h-full lg:min-h-0 relative overflow-hidden">
+      <div className="w-full lg:w-[450px] bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl flex flex-col shrink-0 h-auto min-h-[400px]">
         <div className="p-4 border-b bg-slate-50/50 rounded-t-xl flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
@@ -346,7 +346,7 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
           </div>
         </div>
 
-        <div className="flex-1 p-4 overflow-y-auto">
+        <div className="flex-1 p-4">
           {selectedDateTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">

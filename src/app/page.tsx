@@ -591,9 +591,9 @@ export default function TodoApp() {
   const filteredTasks = getFilteredTasks();
 
   return (
-    <div className="flex min-h-screen md:h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-visible md:overflow-hidden">
+      <div className="flex-1 flex flex-col">
         {/* Header with Tabs */}
         <div className="border-b bg-background sticky top-0 z-30 w-full">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'tasks' | 'study' | 'notes')} className="w-full">
@@ -615,8 +615,8 @@ export default function TodoApp() {
             </div>
 
             {/* Tasks Tab Content - Now includes sidebar */}
-            <TabsContent value="tasks" className="mt-0 h-auto md:h-[calc(100vh-80px)]">
-              <div className="flex flex-col md:flex-row h-auto md:h-full overflow-visible md:overflow-y-auto md:overflow-x-hidden">
+            <TabsContent value="tasks" className="mt-0">
+              <div className="flex flex-col md:flex-row h-full">
                 {/* Sidebar inside Tasks tab */}
                 {renderSidebar()}
 
@@ -708,10 +708,7 @@ export default function TodoApp() {
 
                   {/* Task Content */}
                   {viewMode === 'kanban' || viewMode === 'calendar' ? (
-                    <div className={cn(
-                      "flex-1",
-                      viewMode === 'calendar' ? "overflow-visible lg:overflow-hidden" : "overflow-hidden"
-                    )}>
+                    <div className="flex-1">
                       {taskStore.isLoading ? (
                         <div className="flex items-center justify-center h-full">
                           <div className="text-muted-foreground">Loading...</div>
@@ -740,7 +737,7 @@ export default function TodoApp() {
                           />
                         </div>
                       ) : (
-                        <div className="h-auto min-h-full lg:h-full p-4">
+                        <div className="p-4">
                           <CalendarView tasks={filteredTasks} onTaskClick={(task) => console.log('Task clicked:', task)} />
                         </div>
                       )}
