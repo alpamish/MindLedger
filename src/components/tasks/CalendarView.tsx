@@ -53,11 +53,6 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [selectedDateTasks, setSelectedDateTasks] = useState<any[]>([]);
-
-  useEffect(() => {
-    setSelectedDateTasks(getTasksForDate(selectedDate));
-  }, [selectedDate, tasks]);
 
   // Get tasks for a specific date
   const getTasksForDate = (date: Date) => {
@@ -66,6 +61,8 @@ export function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
       return isSameDay(new Date(task.dueDate), date);
     });
   };
+
+  const selectedDateTasks = getTasksForDate(selectedDate);
 
   const completedCount = selectedDateTasks.filter((t) => t.status === TaskStatus.DONE).length;
 

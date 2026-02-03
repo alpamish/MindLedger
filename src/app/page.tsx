@@ -147,6 +147,7 @@ export default function TodoApp() {
   const handleTaskStatusChange = async (taskId: string, completed: boolean) => {
     await taskStore.updateTaskData(taskId, {
       status: completed ? TaskStatus.DONE : TaskStatus.TODO,
+      isArchived: completed,
     });
   };
 
@@ -531,6 +532,18 @@ export default function TodoApp() {
             >
               <TagIcon className="h-4 w-4 mr-2" />
               Tags
+            </Button>
+
+            <Button
+              variant={taskStore.currentView === 'archive' ? 'secondary' : 'ghost'}
+              className="w-full justify-start"
+              onClick={() => taskStore.setCurrentView('archive')}
+            >
+              <Archive className="h-4 w-4 mr-2" />
+              Archive
+              <Badge variant="secondary" className="ml-auto">
+                {Array.from(taskStore.tasks.values()).filter((t) => t.isArchived).length}
+              </Badge>
             </Button>
           </div>
 

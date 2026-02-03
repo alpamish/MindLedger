@@ -13,7 +13,7 @@ interface TaskState {
   tasks: Map<string, any>;
   isLoading: boolean;
   error: string | null;
-  currentView: 'all' | 'inbox' | 'today' | 'upcoming' | 'overdue' | 'priority' | 'tags';
+  currentView: 'all' | 'inbox' | 'today' | 'upcoming' | 'overdue' | 'priority' | 'tags' | 'archive';
   selectedTaskId: string | null;
   filters: TaskFilters;
 
@@ -286,6 +286,12 @@ export const useTaskStore = create<TaskState>()(
         weekEnd.setDate(weekEnd.getDate() + 7);
 
         return taskArray.filter((task) => {
+          // Archive view shows only archived tasks
+          if (currentView === 'archive') {
+            return task.isArchived === true;
+          }
+
+          // All other views exclude archived tasks
           if (task.isArchived) return false;
 
           switch (currentView) {

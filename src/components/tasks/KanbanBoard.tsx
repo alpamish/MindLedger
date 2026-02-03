@@ -207,8 +207,13 @@ export function KanbanBoard({ tasks, onTaskUpdate, onTaskDelete, onTaskClick }: 
     e.nativeEvent.stopImmediatePropagation();
 
     try {
-      const newStatus = task.status === TaskStatus.DONE ? TaskStatus.TODO : TaskStatus.DONE;
-      await onTaskUpdate(task.id, { status: newStatus });
+      const isCompleting = task.status !== TaskStatus.DONE;
+      const newStatus = isCompleting ? TaskStatus.DONE : TaskStatus.TODO;
+      // Auto-archive when marking as done
+      const updates = isCompleting 
+        ? { status: newStatus, isArchived: true }
+        : { status: newStatus, isArchived: false };
+      await onTaskUpdate(task.id, updates);
     } catch (error) {
       console.error('Failed to update task status:', error);
       alert('Failed to update task. Please try again.');
