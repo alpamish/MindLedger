@@ -33,6 +33,10 @@ interface TaskState {
   updateTaskData: (id: string, data: TaskUpdateInput) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   bulkUpdate: (taskIds: string[], data: any) => Promise<void>;
+  archiveTask: (id: string) => Promise<void>;
+  unarchiveTask: (id: string) => Promise<void>;
+  bulkArchive: (taskIds: string[]) => Promise<void>;
+  bulkUnarchive: (taskIds: string[]) => Promise<void>;
 
   syncOfflineQueue: () => Promise<void>;
   clearOfflineQueue: () => void;
@@ -229,6 +233,110 @@ export const useTaskStore = create<TaskState>()(
             await get().fetchTasks();
           } else {
             throw new Error(result.error?.message || 'Failed to bulk update tasks');
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          set({ error: message });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      archiveTask: async (id: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await fetch('/api/tasks/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              operation: 'archive',
+              taskIds: [id],
+            }),
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            get().updateTask(id, { isArchived: true, archivedAt: new Date() });
+          } else {
+            throw new Error(result.error?.message || 'Failed to archive task');
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          set({ error: message });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      unarchiveTask: async (id: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await fetch('/api/tasks/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              operation: 'unarchive',
+              taskIds: [id],
+            }),
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            get().updateTask(id, { isArchived: false, archivedAt: null });
+          } else {
+            throw new Error(result.error?.message || 'Failed to unarchive task');
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          set({ error: message });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      bulkArchive: async (taskIds: string[]) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await fetch('/api/tasks/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              operation: 'archive',
+              taskIds,
+            }),
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            await get().fetchTasks();
+          } else {
+            throw new Error(result.error?.message || 'Failed to bulk archive tasks');
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          set({ error: message });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      bulkUnarchive: async (taskIds: string[]) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await fetch('/api/tasks/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              operation: 'unarchive',
+              taskIds,
+            }),
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            await get().fetchTasks();
+          } else {
+            throw new Error(result.error?.message || 'Failed to bulk unarchive tasks');
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error';

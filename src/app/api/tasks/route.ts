@@ -38,9 +38,12 @@ export async function GET(request: NextRequest) {
     const includeSubtasks = searchParams.get('includeSubtasks') === 'true';
 
     // Build Prisma query
-    const where: any = {
-      isArchived: isArchived === 'true',
-    };
+    const where: any = {};
+    
+    // Only filter by isArchived if explicitly requested
+    if (isArchived !== null && isArchived !== undefined) {
+      where.isArchived = isArchived === 'true';
+    }
 
     if (projectId) where.projectId = projectId;
     if (listId) where.listId = listId;

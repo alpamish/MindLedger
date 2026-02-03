@@ -23,7 +23,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { StudyTracker } from '@/components/study/StudyTracker';
-import { KanbanBoard } from '@/components/tasks/KanbanBoard';
 import { CalendarView } from '@/components/tasks/CalendarView';
 import { Notes } from '@/components/notes/Notes';
 import {
@@ -48,7 +47,6 @@ import {
   Filter,
   X,
   BookOpen,
-  Kanban,
   FileText,
   Menu,
 } from 'lucide-react';
@@ -67,7 +65,7 @@ export default function TodoApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'kanban' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid' | 'calendar'>('list');
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [subtaskInputs, setSubtaskInputs] = useState<Record<string, string>>({});
   const [isMobile, setIsMobile] = useState(false);
@@ -687,14 +685,6 @@ export default function TodoApp() {
                             <LayoutGrid className="h-4 w-4" />
                           </Button>
                           <Button
-                            variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-                            size="icon"
-                            className="rounded-none"
-                            onClick={() => setViewMode('kanban')}
-                          >
-                            <Kanban className="h-4 w-4" />
-                          </Button>
-                          <Button
                             variant={viewMode === 'calendar' ? 'secondary' : 'ghost'}
                             size="icon"
                             className="rounded-l-none"
@@ -720,7 +710,7 @@ export default function TodoApp() {
                   </div>
 
                   {/* Task Content */}
-                  {viewMode === 'kanban' || viewMode === 'calendar' ? (
+                  {viewMode === 'calendar' ? (
                     <div className="flex-1">
                       {taskStore.isLoading ? (
                         <div className="flex items-center justify-center h-full">
@@ -737,17 +727,6 @@ export default function TodoApp() {
                               Create Task
                             </Button>
                           )}
-                        </div>
-                      ) : viewMode === 'kanban' ? (
-                        <div className="h-full p-4">
-                          <KanbanBoard
-                            tasks={filteredTasks}
-                            onTaskUpdate={taskStore.updateTaskData}
-                            onTaskDelete={taskStore.deleteTask}
-                            onTaskClick={(task) => {
-                              console.log('Task clicked:', task);
-                            }}
-                          />
                         </div>
                       ) : (
                         <div className="p-4">
