@@ -296,14 +296,14 @@ export function StudyTracker() {
   const statistics = studyStore.statistics;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold">Track Your Goals</h2>
-          <p className="text-muted-foreground">Track your progress and achieve your learning goals</p>
+          <h2 className="text-2xl md:text-3xl font-bold">Track Your Goals</h2>
+          <p className="text-muted-foreground text-sm">Track your progress and achieve your learning goals</p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <Dialog open={isCreateGoalOpen} onOpenChange={setIsCreateGoalOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -311,7 +311,7 @@ export function StudyTracker() {
                 New Goal
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[95vw] max-w-[500px] max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Study Goal</DialogTitle>
               </DialogHeader>
@@ -413,7 +413,7 @@ export function StudyTracker() {
                 )}
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[95vw] max-w-[500px] max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Log Study Session</DialogTitle>
               </DialogHeader>
@@ -458,8 +458,8 @@ export function StudyTracker() {
                 <div className="space-y-2">
                   <Label>Duration</Label>
                   <div className="flex items-center gap-2">
-                    <div className={`flex-1 p-4 rounded-lg text-center ${Math.floor(timerSeconds / 60) > 1440 ? 'bg-red-100' : 'bg-muted'}`}>
-                      <div className={`text-3xl font-mono font-bold ${Math.floor(timerSeconds / 60) > 1440 ? 'text-red-600' : ''}`}>
+                    <div className={`flex-1 p-3 md:p-4 rounded-lg text-center ${Math.floor(timerSeconds / 60) > 1440 ? 'bg-red-100' : 'bg-muted'}`}>
+                      <div className={`text-2xl md:text-3xl font-mono font-bold ${Math.floor(timerSeconds / 60) > 1440 ? 'text-red-600' : ''}`}>
                         {formatTimer(timerSeconds)}
                       </div>
                       {isTimerRunning && (
@@ -469,10 +469,10 @@ export function StudyTracker() {
                     <Button
                       variant={isTimerRunning ? "destructive" : "default"}
                       size="icon"
-                      className="h-16 w-16"
+                      className="h-14 w-14 md:h-16 md:w-16"
                       onClick={toggleTimer}
                     >
-                      {isTimerRunning ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                      {isTimerRunning ? <Pause className="h-5 w-5 md:h-6 md:w-6" /> : <Play className="h-5 w-5 md:h-6 md:w-6" />}
                     </Button>
                   </div>
                   {Math.floor(timerSeconds / 60) > 1440 && (
@@ -593,7 +593,7 @@ export function StudyTracker() {
                 View Sessions
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[50rem] max-h-[83vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] max-w-[600px] max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Recorded Study Sessions</DialogTitle>
               </DialogHeader>
@@ -638,9 +638,9 @@ export function StudyTracker() {
                           {paginatedSessions.map((session) => {
                             const goal = studyStore.getGoalById(session.goalId);
                             return (
-                              <div key={session.id} className="flex items-start justify-between p-3 bg-muted rounded-lg">
+                              <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-muted rounded-lg gap-2">
                                 <div className="flex items-start gap-3 flex-1">
-                                  <span className="text-xl">{goal ? StudyCategoryConfig[goal.category]?.icon : '📚'}</span>
+                                  <span className="text-xl hidden sm:inline">{goal ? StudyCategoryConfig[goal.category]?.icon : '📚'}</span>
                                   <div className="flex-1">
                                     <p className="font-medium text-sm">{goal?.title || 'Unknown Goal'}</p>
                                     <p className="text-xs text-muted-foreground">
@@ -657,7 +657,7 @@ export function StudyTracker() {
                                     )}
                                   </div>
                                 </div>
-                                <div className="text-right ml-3">
+                                <div className="text-left sm:text-right ml-0 sm:ml-3">
                                   <p className="text-sm font-medium">
                                     {Math.floor(session.duration / 60)}h {session.duration % 60}m
                                   </p>
@@ -710,7 +710,7 @@ export function StudyTracker() {
                 Archived Goals
               </Button>
             </DialogTrigger>
-            <DialogContent className="w-[45%] max-h-[83vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] max-w-[600px] max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Archived Goals</DialogTitle>
               </DialogHeader>
@@ -734,18 +734,18 @@ export function StudyTracker() {
                   return (
                     <>
                       <ScrollArea className="flex-1 overflow-y-auto pr-4">
-                        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 pb-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4">
                           {paginatedGoals.map((goal) => {
                             const config = StudyCategoryConfig[goal.category];
                             const progress = goal.progress || {};
                             return (
                               <Card key={goal.id} className="hover:shadow-md transition-shadow">
-                                <CardHeader>
+                                <CardHeader className="p-4 md:p-6">
                                   <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-2xl">{config?.icon}</span>
+                                      <span className="text-xl">{config?.icon}</span>
                                       <div>
-                                        <CardTitle className="text-lg">{goal.title}</CardTitle>
+                                        <CardTitle className="text-base md:text-lg">{goal.title}</CardTitle>
                                         <CardDescription className="text-xs">{config?.label}</CardDescription>
                                       </div>
                                     </div>
@@ -754,7 +754,7 @@ export function StudyTracker() {
                                     </Badge>
                                   </div>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent className="p-4 md:p-6 pt-0 space-y-3 md:space-y-4">
                                   {/* Progress */}
                                   {goal.targetValue && (
                                     <div className="space-y-2">
@@ -780,15 +780,15 @@ export function StudyTracker() {
                                         setIsViewGoalSessionsOpen(true);
                                       }}
                                     >
-                                      <div className="text-lg font-bold">{progress.sessionCount || 0}</div>
+                                      <div className="text-base md:text-lg font-bold">{progress.sessionCount || 0}</div>
                                       <div className="text-xs text-muted-foreground">Sessions</div>
                                     </div>
                                     <div className="bg-muted rounded-lg p-2">
-                                      <div className="text-lg font-bold">{formatNumber(progress.totalHours) || 0}h</div>
+                                      <div className="text-base md:text-lg font-bold">{formatNumber(progress.totalHours) || 0}h</div>
                                       <div className="text-xs text-muted-foreground">Total</div>
                                     </div>
                                     <div className="bg-muted rounded-lg p-2">
-                                      <div className="text-lg font-bold">{progress.currentStreak || 0}🔥</div>
+                                      <div className="text-base md:text-lg font-bold">{progress.currentStreak || 0}🔥</div>
                                       <div className="text-xs text-muted-foreground">Streak</div>
                                     </div>
                                   </div>
@@ -852,7 +852,7 @@ export function StudyTracker() {
           </Dialog>
           {/* Goal Specific Sessions Dialog */}
           <Dialog open={isViewGoalSessionsOpen} onOpenChange={setIsViewGoalSessionsOpen}>
-            <DialogContent className="max-w-[50rem] max-h-[83vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] max-w-[600px] max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {selectedGoalId ? studyStore.getGoalById(selectedGoalId)?.title : 'Goal'} - Sessions
@@ -882,9 +882,9 @@ export function StudyTracker() {
                           <ScrollArea className="flex-1 overflow-y-auto pr-4">
                             <div className="space-y-3 pb-4">
                               {paginatedSessions.map((session) => (
-                                <div key={session.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-muted rounded-lg gap-2">
                                   <div className="flex items-center gap-3">
-                                    <span className="text-xl">{selectedGoal ? StudyCategoryConfig[selectedGoal.category]?.icon : '📚'}</span>
+                                    <span className="text-xl hidden sm:inline">{selectedGoal ? StudyCategoryConfig[selectedGoal.category]?.icon : '📚'}</span>
                                     <div>
                                       <p className="font-medium text-sm">{selectedGoal?.title || 'Unknown Goal'}</p>
                                       <p className="text-xs text-muted-foreground">
@@ -895,11 +895,11 @@ export function StudyTracker() {
                                       )}
                                     </div>
                                   </div>
-                                  <div className="text-right">
+                                  <div className="text-left sm:text-right ml-0 sm:ml-3">
                                     {session.mood && (
-                                      <p>
-                                        {/* <span className="text-xs font-medium text-muted-foreground">Mood:</span> */}
-                                        <span className="text-xs text-right m-auto">{session.mood === 'great' ? '😄 Great' : session.mood === 'good' ? '🙂 Good' : session.mood === 'okay' ? '😐 Okay' : session.mood === 'difficult' ? '😓 Difficult' : '😴 Tiring'}</span>
+                                      <p className="text-sm text-right">
+                                        <span className="text-xs text-muted-foreground">Mood:</span>
+                                        <span className="text-xs ml-1">{session.mood === 'great' ? '😄 Great' : session.mood === 'good' ? '🙂 Good' : session.mood === 'okay' ? '😐 Okay' : session.mood === 'difficult' ? '😓 Difficult' : '😴 Tiring'}</span>
                                       </p>
                                     )}
                                     <p className="text-sm font-medium">
@@ -951,7 +951,7 @@ export function StudyTracker() {
 
       {/* Statistics Cards */}
       {statistics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Study Time</CardTitle>
@@ -1012,16 +1012,16 @@ export function StudyTracker() {
 
       {/* Goals Grid */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Your Goals</h3>
-          <div className="flex items-center gap-2">
-            <div className="relative">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <h3 className="text-lg md:text-xl font-semibold">Your Goals</h3>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-[180px] md:w-[200px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search goals..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-[200px]"
+                className="pl-9 w-full"
               />
               {searchTerm && (
                 <Button
@@ -1035,7 +1035,7 @@ export function StudyTracker() {
               )}
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[140px] md:w-[150px]">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -1048,7 +1048,7 @@ export function StudyTracker() {
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'archived')}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-full sm:w-[110px] md:w-[120px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -1111,7 +1111,7 @@ export function StudyTracker() {
           }
 
           return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeGoals.map((goal) => {
                 const config = StudyCategoryConfig[goal.category];
                 const progress = goal.progress || {};
@@ -1121,7 +1121,7 @@ export function StudyTracker() {
 
                 return (
                   <Card key={goal.id} className="hover:shadow-lg transition-all duration-300 overflow-hidden">
-                      <CardContent className="p-6 relative">
+                      <CardContent className="p-4 md:p-6 relative">
                         {/* Active/Archived Badge and Delete Button */}
                         <div className="absolute top-6 right-6 flex items-center gap-2">
                           {!goal.isActive || percentage >= 100 ? (
@@ -1149,24 +1149,24 @@ export function StudyTracker() {
                       <div className="flex items-start gap-4 mb-5">
                         {/* Circular Progress Indicator */}
                         <div className="relative flex-shrink-0">
-                          <svg className="w-20 h-20 transform -rotate-90">
+                          <svg className="w-16 h-16 md:w-20 md:h-20 transform -rotate-90">
                             {/* Background circle */}
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="36"
+                              cx="32"
+                              cy="32"
+                              r="28"
                               stroke="currentColor"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
                               className="text-muted"
                             />
                             {/* Progress circle */}
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="36"
+                              cx="32"
+                              cy="32"
+                              r="28"
                               stroke="currentColor"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
                               strokeLinecap="round"
                               className={percentage >= 100 ? "text-green-500" : "text-primary"}
@@ -1179,7 +1179,7 @@ export function StudyTracker() {
                           </svg>
                           {/* Percentage in center */}
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className={`text-lg font-bold ${percentage >= 100 ? "text-green-600" : "text-primary"}`}>
+                            <span className={`text-base md:text-lg font-bold ${percentage >= 100 ? "text-green-600" : "text-primary"}`}>
                               {percentage}%
                             </span>
                           </div>
@@ -1225,33 +1225,33 @@ export function StudyTracker() {
                       </div>
 
                       {/* Stats Grid */}
-                      <div className="grid grid-cols-3 gap-3 mb-5">
+                      <div className="grid grid-cols-3 gap-2 md:gap-3 mb-4 md:mb-5">
                         <div
-                          className="bg-muted/50 rounded-xl p-3 text-center cursor-pointer hover:bg-muted transition-colors"
+                          className="bg-muted/50 rounded-lg md:rounded-xl p-2 md:p-3 text-center cursor-pointer hover:bg-muted transition-colors"
                           onClick={() => {
                             setSelectedGoalId(goal.id);
                             setIsViewGoalSessionsOpen(true);
                           }}
                         >
                           <div className="flex items-center justify-center gap-1 mb-1">
-                            <BookOpen className="w-4 h-4 text-muted-foreground" />
+                            <BookOpen className="w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
                           </div>
-                          <div className="text-xl font-bold">{progress.sessionCount || 0}</div>
+                          <div className="text-lg md:text-xl font-bold">{progress.sessionCount || 0}</div>
                           <div className="text-xs text-muted-foreground">Sessions</div>
                         </div>
-                        <div className="bg-muted/50 rounded-xl p-3 text-center">
+                        <div className="bg-muted/50 rounded-lg md:rounded-xl p-2 md:p-3 text-center">
                           <div className="flex items-center justify-center gap-1 mb-1">
-                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <Clock className="w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
                           </div>
-                          <div className="text-xl font-bold">{formatNumber(progress.totalHours) || 0}h</div>
-                          <div className="text-xs text-muted-foreground">Total Hours</div>
+                          <div className="text-lg md:text-xl font-bold">{formatNumber(progress.totalHours) || 0}h</div>
+                          <div className="text-xs text-muted-foreground">Total</div>
                         </div>
-                        <div className="bg-muted/50 rounded-xl p-3 text-center">
+                        <div className="bg-muted/50 rounded-lg md:rounded-xl p-2 md:p-3 text-center">
                           <div className="flex items-center justify-center gap-1 mb-1">
-                            <Flame className="w-4 h-4 text-orange-500" />
+                            <Flame className="w-3 h-3 md:w-4 md:h-4 text-orange-500" />
                           </div>
-                          <div className="text-xl font-bold">{progress.currentStreak || 0}</div>
-                          <div className="text-xs text-muted-foreground">Day Streak</div>
+                          <div className="text-lg md:text-xl font-bold">{progress.currentStreak || 0}</div>
+                          <div className="text-xs text-muted-foreground">Streak</div>
                         </div>
                       </div>
 
@@ -1295,7 +1295,7 @@ export function StudyTracker() {
 
       {/* Delete Goal Confirmation Dialog */}
       <Dialog open={!!goalToDelete} onOpenChange={() => setGoalToDelete(null)}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-[450px]">
           <DialogHeader>
             <DialogTitle>Delete Goal</DialogTitle>
           </DialogHeader>
