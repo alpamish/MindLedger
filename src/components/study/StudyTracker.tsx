@@ -734,7 +734,7 @@ export function StudyTracker() {
                   return (
                     <>
                       <ScrollArea className="flex-1 overflow-y-auto pr-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4">
+                        <div className="grid grid-cols-1 gap-4 pb-4">
                           {paginatedGoals.map((goal) => {
                             const config = StudyCategoryConfig[goal.category];
                             const progress = goal.progress || {};
@@ -952,57 +952,73 @@ export function StudyTracker() {
       {/* Statistics Cards */}
       {statistics && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Study Time</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.summary.totalHours}h</div>
-              <p className="text-xs text-muted-foreground">
+          <Card className="relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+            <div className="absolute top-0-20 right-0 w h-20 bg-blue-200/30 rounded-full -translate-x-4 -translate-y-4"></div>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-lg bg-blue-500 text-white">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Total Study Time</span>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-blue-900 dark:text-blue-100">
+                {statistics.summary.totalHours}h
+              </div>
+              <p className="text-xs text-blue-600/70 dark:text-blue-400 mt-1">
                 {statistics.summary.sessionCount} sessions
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
-              <Flame className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+          <Card className="relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-orange-200/30 rounded-full -translate-x-4 -translate-y-4"></div>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-lg bg-orange-500 text-white">
+                  <Flame className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-medium text-orange-700 dark:text-orange-300">Current Streak</span>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-orange-900 dark:text-orange-100">
                 {statistics.activeStreaks.reduce((max: number, s: any) => Math.max(max, s.days), 0)} days
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-orange-600/70 dark:text-orange-400 mt-1">
                 {statistics.activeStreaks.length} active goals
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Session</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{statistics.summary.avgMinutesPerSession}m</div>
-              <p className="text-xs text-muted-foreground">
+          <Card className="relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-green-200/30 rounded-full -translate-x-4 -translate-y-4"></div>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-lg bg-green-500 text-white">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-medium text-green-700 dark:text-green-300">Avg Session</span>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-green-900 dark:text-green-100">
+                {statistics.summary.avgMinutesPerSession}m
+              </div>
+              <p className="text-xs text-green-600/70 dark:text-green-400 mt-1">
                 per session
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Best Day</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+          <Card className="relative overflow-hidden border-0 shadow-md bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-purple-200/30 rounded-full -translate-x-4 -translate-y-4"></div>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-lg bg-purple-500 text-white">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-medium text-purple-700 dark:text-purple-300">Best Day</span>
+              </div>
+              <div className="text-2xl md:text-3xl font-bold text-purple-900 dark:text-purple-100">
                 {Math.round(statistics.summary.bestDayMinutes / 60 * 10) / 10}h
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-purple-600/70 dark:text-purple-400 mt-1">
                 {statistics.summary.bestDay ? format(new Date(statistics.summary.bestDay), 'MMM d') : 'N/A'}
               </p>
             </CardContent>
@@ -1118,6 +1134,7 @@ export function StudyTracker() {
                 const percentage = progress.progressPercentage || 0;
                 const circumference = 2 * Math.PI * 36;
                 const strokeDashoffset = circumference - (percentage / 100) * circumference;
+                const isComplete = percentage >= 100;
 
                 return (
                   <Card key={goal.id} className="hover:shadow-lg transition-all duration-300 overflow-hidden">
@@ -1148,13 +1165,13 @@ export function StudyTracker() {
                         {/* Circular Progress & Title Section */}
                       <div className="flex items-start gap-4 mb-5">
                         {/* Circular Progress Indicator */}
-                        <div className="relative flex-shrink-0">
-                          <svg className="w-16 h-16 md:w-20 md:h-20 transform -rotate-90">
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                          <svg className="w-full h-full transform -rotate-90">
                             {/* Background circle */}
                             <circle
-                              cx="32"
-                              cy="32"
-                              r="28"
+                              cx="50%"
+                              cy="50%"
+                              r="42%"
                               stroke="currentColor"
                               strokeWidth="5"
                               fill="none"
@@ -1162,14 +1179,14 @@ export function StudyTracker() {
                             />
                             {/* Progress circle */}
                             <circle
-                              cx="32"
-                              cy="32"
-                              r="28"
+                              cx="50%"
+                              cy="50%"
+                              r="42%"
                               stroke="currentColor"
                               strokeWidth="5"
                               fill="none"
                               strokeLinecap="round"
-                              className={percentage >= 100 ? "text-green-500" : "text-primary"}
+                              className={isComplete ? "text-green-500" : "text-primary"}
                               style={{
                                 strokeDasharray: circumference,
                                 strokeDashoffset: strokeDashoffset,
@@ -1178,8 +1195,8 @@ export function StudyTracker() {
                             />
                           </svg>
                           {/* Percentage in center */}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className={`text-base md:text-lg font-bold ${percentage >= 100 ? "text-green-600" : "text-primary"}`}>
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className={`text-xs sm:text-base font-bold tabular-nums ${isComplete ? "text-green-600" : "text-primary"}`}>
                               {percentage}%
                             </span>
                           </div>
