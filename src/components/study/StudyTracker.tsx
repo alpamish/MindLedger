@@ -29,6 +29,8 @@ import {
   Archive,
   Activity,
   Trash2,
+  Search,
+  X,
 } from 'lucide-react';
 
 export function StudyTracker() {
@@ -121,6 +123,11 @@ export function StudyTracker() {
 
   // Delete goal state
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
+
+  // Filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived'>('active');
 
   // Initialize
   useEffect(() => {
@@ -1005,14 +1012,66 @@ export function StudyTracker() {
 
       {/* Goals Grid */}
       <div>
-        <h3 className="text-xl font-semibold mb-4">Study Goals</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold">Study Goals</h3>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search goals..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 w-[200px]"
+              />
+              {searchTerm && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
+                  onClick={() => setSearchTerm('')}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {Object.entries(StudyCategoryConfig).map(([key, config]) => (
+                  <SelectItem key={key} value={key}>
+                    {config.icon} {config.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'archived')}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         {(() => {
           const activeGoals = goals.filter((goal) => {
             const progress = goal.progress || {};
-            return goal.isActive && (progress.progressPercentage || 0) < 100;
+            const matchesSearch = searchTerm === '' ||
+              goal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              (goal.description && goal.description.toLowerCase().includes(searchTerm.toLowerCase()));
+            const matchesCategory = categoryFilter === 'all' || goal.category === categoryFilter;
+            const matchesStatus = statusFilter === 'all' ||
+              (statusFilter === 'active' && goal.isActive && (progress.progressPercentage || 0) < 100) ||
+              (statusFilter === 'archived' && (!goal.isActive || (progress.progressPercentage || 0) >= 100));
+            return matchesSearch && matchesCategory && matchesStatus;
           });
           const hasGoals = goals.length > 0;
-          const allCompleted = hasGoals && activeGoals.length === 0;
 
           if (!hasGoals) {
             return (
@@ -1031,27 +1090,21 @@ export function StudyTracker() {
             );
           }
 
-          if (allCompleted) {
+          if (activeGoals.length === 0) {
             return (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                  <Search className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground text-center mb-2">
-                    All goals completed!
+                    No goals match your filters.
                   </p>
                   <p className="text-sm text-muted-foreground text-center mb-4">
-                    Great job! View your archived goals or create new ones.
+                    Try adjusting your search term or filters.
                   </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setIsViewArchiveOpen(true)}>
-                      <Archive className="h-4 w-4 mr-2" />
-                      View Archived
-                    </Button>
-                    <Button onClick={() => setIsCreateGoalOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Goal
-                    </Button>
-                  </div>
+                  <Button variant="outline" onClick={() => { setSearchTerm(''); setCategoryFilter('all'); setStatusFilter('active'); }}>
+                    <X className="h-4 w-4 mr-2" />
+                    Clear Filters
+                  </Button>
                 </CardContent>
               </Card>
             );
@@ -1069,9 +1122,14 @@ export function StudyTracker() {
                 return (
                   <Card key={goal.id} className="hover:shadow-lg transition-all duration-300 overflow-hidden">
                       <CardContent className="p-6 relative">
-                        {/* Active Badge and Delete Button */}
+                        {/* Active/Archived Badge and Delete Button */}
                         <div className="absolute top-6 right-6 flex items-center gap-2">
-                          {goal.isActive && (
+                          {!goal.isActive || percentage >= 100 ? (
+                            <Badge variant="secondary" className="text-xs font-normal bg-gray-100 text-gray-600">
+                              <Archive className="w-3 h-3 mr-1" />
+                              {percentage >= 100 ? 'Completed' : 'Archived'}
+                            </Badge>
+                          ) : (
                             <Badge variant="default" className="text-xs font-normal bg-green-500 hover:bg-green-600">
                               <Activity className="w-3 h-3 mr-1" />
                               Active
@@ -1201,15 +1259,20 @@ export function StudyTracker() {
                       <Button
                         className="w-full"
                         variant={percentage >= 100 ? 'secondary' : 'default'}
-                        disabled={percentage >= 100}
+                        disabled={percentage >= 100 || !goal.isActive}
                         onClick={() => {
-                          if (percentage < 100) {
+                          if (percentage < 100 && goal.isActive) {
                             setSelectedGoalForSession(goal.id);
                             setIsLogSessionOpen(true);
                           }
                         }}
                       >
-                        {percentage >= 100 ? (
+                        {!goal.isActive ? (
+                          <>
+                            <Archive className="h-4 w-4 mr-2" />
+                            Goal Archived
+                          </>
+                        ) : percentage >= 100 ? (
                           <>
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Goal Completed
