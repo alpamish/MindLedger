@@ -300,8 +300,8 @@ export function StudyTracker() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Study Tracker</h2>
-          <p className="text-muted-foreground">Track your learning progress and build consistent habits</p>
+          <h2 className="text-3xl font-bold">Track Your Goals</h2>
+          <p className="text-muted-foreground">Track your progress and achieve your learning goals</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isCreateGoalOpen} onOpenChange={setIsCreateGoalOpen}>
@@ -1013,7 +1013,7 @@ export function StudyTracker() {
       {/* Goals Grid */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Study Goals</h3>
+          <h3 className="text-xl font-semibold">Your Goals</h3>
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
